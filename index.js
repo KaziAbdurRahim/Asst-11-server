@@ -7,15 +7,10 @@ const { MongoClient, ServerApiVersion, ObjectId } = require('mongodb');
 const app = express();
 const port = process.env.PORT || 5000;
 
-
-
 // Middleware
 app.use(cors({
-    origin: [
-        'http://localhost:5175',
-    ,
-    ],
-    credentials: true,
+    origin: ['http://localhost:5173','https://rentalcar-2516a.firebaseapp.com', 'https://rentalcar-2516a.web.app' ],
+    credentials: true,  
     allowedHeaders: ['Content-Type', 'Authorization'],
     methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH'],
 }));
@@ -38,33 +33,30 @@ const verifyToken = (req, res, next) => {
     });
 };
 
-
-
-
-//JWT token
+//JWT token creation
 app.post('/jwt', (req, res) => {
     const user = req.body;
-    console.log('User:', user);
+    // console.log('User:', user);
     const accessToken = jwt.sign(user, process.env.ACCESS_TOKEN_SECRET, { expiresIn: '5h' });
+    // console.log(accessToken);
 
     res.cookie('token', accessToken, {
         httpOnly: true,
         //set true in production 
+        // process.env.NODE_ENV === 'production'
         secure: process.env.NODE_ENV === 'production',
-        sameSite: 'none', //change later maybe
+        sameSite:  process.env.NODE_ENV === 'production'? 'none':'strict', 
+        //change later maybe vv
     }).send({ success: true });
 }
 );
 
 
 app.get('/', (req, res) => {
-    res.send('Movie Server is running');
+    res.send('Car Server is running');
 });
 
-
 //MongoDB
-
-
 const uri = `mongodb+srv://${process.env.DB_USER}:${process.env.DB_PASS}@cluster0.2oi6w.mongodb.net/?retryWrites=true&w=majority&appName=Cluster0`;
 
 const client = new MongoClient(uri, {
@@ -77,14 +69,9 @@ const client = new MongoClient(uri, {
 
 async function run() {
     try {
-        // Connect the client to the server	(optional starting in v4.7)
-        await client.connect();
-        // Send a ping to confirm a successful connection
-        await client.db("admin").command({ ping: 1 });
         console.log("Pinged your deployment. You successfully connected to MongoDB!");
-
-        const database = client.db('ConsultHive');
-        const servicesCollection = database.collection('consultservices');
+        const database = client.db('carhouse');
+        const servicesCollection = database.collection('carservices');
         const bookingCollection = database.collection('bookings');
 
         // get all services
@@ -122,8 +109,6 @@ async function run() {
                 res.status(500).send({ message: 'Internal Server Error' });
             }
 
-            // res.send({message: "Nice"})
-
         })
 
         // get all the orders placed by user
@@ -136,7 +121,6 @@ async function run() {
             try {
                 // Fetch all bookings for the logged-in user
                 const bookings = await bookingCollection.find({ userEmail: email }).toArray();
-
                 // Add service name and url to each booking
                 const enrichedBookings = await Promise.all(
                     bookings.map(async (booking) => {
@@ -192,7 +176,6 @@ async function run() {
                 res.status(500).send({ message: 'Internal Server Error' });
             }
         });
-
 
 
         // get feature services get max 6
@@ -292,9 +275,6 @@ async function run() {
     }
 }
 run().catch(console.dir);
-
-
-
 
 // Services
 
